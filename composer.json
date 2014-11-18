@@ -1,0 +1,29 @@
+{
+	"name": "metanet/php-twitter-api",
+	"type": "library",
+	"description": "PHP library to make usage of the twitter API more easy",
+	"keywords": ["twitter", "api"],
+	"homepage": "http://github.com/METANETAG/php-twitter-api",
+	"license": "LGPL",
+	"autoload": {
+		"psr-4": {
+			"ch\\metanet\\": "lib/ch/metanet/"
+		}
+	},
+	"authors": [
+		{
+			"name": "METANET AG",
+			"email": "entwicklung@metanet.ch",
+			"homepage": "http://www.metanet.ch",
+			"role": "Company"
+		}
+	],
+
+	"require": {
+		"php": ">=5.3.10"
+	},
+
+	"require-dev": {
+		"phpunit/phpunit": "4.2.*"
+	}
+}
