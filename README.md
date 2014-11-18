@@ -11,6 +11,7 @@ It simplifies the whole API requesting thing a bit.
 ```php
 try {
 	$twitterApi = new ch\metanet\twitter\api\TwitterAPI('access_token', 'access_token_secret', 'consumer_key', 'consumer_key_secret');
+	
 	$twitterApi->performRequest('statuses/update', TwitterAPI::REQUEST_METHOD_POST, array(
 		'status' => 'foo bar baz'
 	));
