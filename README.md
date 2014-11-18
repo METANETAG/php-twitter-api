@@ -2,7 +2,7 @@
 
 This is a simple PHP wrapper for the twitter API (version 1.1). 
 
-This is a fork of the [twitter-api-php](https://github.com/J7mbo/twitter-api-php) from [J7mbo](https://github.com/J7mbo/)
+This is a fork of the [twitter-api-php](https://github.com/J7mbo/twitter-api-php) from [J7mbo](https://github.com/J7mbo/).
 
 It simplifies the whole API requesting thing a bit.
 
