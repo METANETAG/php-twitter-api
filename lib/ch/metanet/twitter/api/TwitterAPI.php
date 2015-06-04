@@ -80,7 +80,7 @@ class TwitterAPI
 		$cleanedArray = array();
 
 		foreach($parameters as $key => $value) {
-			$cleanedArray = strtr($key, $replace) . '=' . strtr($value, $replace);
+			$cleanedArray[] = strtr($key, $replace) . '=' . strtr($value, $replace);
 		}
 
 		return '?' . implode('&', $cleanedArray);
