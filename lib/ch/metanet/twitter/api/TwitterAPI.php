@@ -91,7 +91,7 @@ class TwitterAPI
 	 * passed to this method. For v1.1, see: https://dev.twitter.com/docs/api/1.1
 	 *
 	 * @param string $url The API url to use. Example: https://api.twitter.com/1.1/search/tweets.json
-	 * @param string $requestMethod Either POST or GET
+	 * @param string $requestMethod Either POST or GETk
 	 */
 	protected function buildOAuth($url, $requestMethod)
 	{
@@ -109,8 +109,6 @@ class TwitterAPI
 		$oauth_signature = base64_encode(hash_hmac('sha1', $base_info, $composite_key, true));
 		$oauth['oauth_signature'] = $oauth_signature;
 		
-		ksort($oauth);
-		
 		$this->oauth = $oauth;
 	}
 
@@ -127,16 +125,8 @@ class TwitterAPI
 	public function performRequest($uri, $requestMethod, $parameters = array())
 	{
 		$requestUrl = $this->apiUrl . $uri . '.json';
-		
-		$this->buildOAuth($requestUrl, $requestMethod, $parameters);
-		
-		$header = array(
-			$this->buildAuthorizationHeader($this->oauth),
-			'Content-Type: application/x-www-form-urlencoded'
-		);
-		
+				
 		$options = array(
-			CURLOPT_HTTPHEADER => $header,
 			CURLOPT_HEADER => false,
 			CURLOPT_URL => $requestUrl,
 			CURLOPT_RETURNTRANSFER => true,
@@ -153,6 +143,15 @@ class TwitterAPI
 			throw new \Exception('Request method must be either POST or GET');
 		}
 
+		$this->buildOAuth($options[CURLOPT_URL], $requestMethod, $parameters);
+
+		$header = array(
+			$this->buildAuthorizationHeader($this->oauth),
+			'Content-Type: application/x-www-form-urlencoded'
+		);
+
+		$options[CURLOPT_HTTPHEADER] = $header;
+
 		curl_setopt_array($this->curl, $options);
 		$json = curl_exec($this->curl);
 
@@ -165,7 +164,7 @@ class TwitterAPI
 			
 			if(isset($responseObj->errors)) {
 				$errorObj = $responseObj->errors[0];
-				
+				var_dump($errorObj);
 				throw new \Exception($errorObj->message, $errorObj->code);
 			}
 			
@@ -188,11 +187,22 @@ class TwitterAPI
 	{
 		$return = array();
 
-		foreach($oauth as $key => $value) {
+		$urlParts = parse_url($baseURI);
+		$queryArr = array();
+		
+		parse_str($urlParts['query'], $queryArr);
+
+		$dataArr = $queryArr + $oauth;
+		
+		ksort($dataArr);
+		
+		foreach($dataArr as $key => $value) {
 			$return[] = rawurlencode($key) . '=' . rawurlencode($value);
 		}
 		
-		$baseString = strtoupper($method) . '&' . rawurlencode($baseURI) . '&' . rawurlencode(implode('&', $return));
+		$url = $urlParts['scheme'] . '://' . $urlParts['host'] . $urlParts['path'];
+		
+		$baseString = strtoupper($method) . '&' . rawurlencode($url) . '&' . rawurlencode(implode('&', $return));
 		
 		return $baseString;
 	}
