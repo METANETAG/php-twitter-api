@@ -186,13 +186,18 @@ class TwitterAPI
 	protected function buildBaseString($baseURI, $method, $oauth)
 	{
 		$return = array();
+		$dataArr = array();
 
 		$urlParts = parse_url($baseURI);
-		$queryArr = array();
 		
-		parse_str($urlParts['query'], $queryArr);
+		if(isset($urlParts['query']) === true) {
+			$queryArr = array();
+			parse_str($urlParts['query'], $queryArr);
 
-		$dataArr = $queryArr + $oauth;
+			$dataArr = $queryArr;
+		}
+		
+		$dataArr += $oauth;
 		
 		ksort($dataArr);
 		
