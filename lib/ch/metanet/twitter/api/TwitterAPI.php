@@ -16,10 +16,10 @@ namespace ch\metanet\twitter\api;
 class TwitterAPI
 {
 	const DEFAULT_API_URL = 'https://api.twitter.com/1.1/';
-	
+
 	const REQUEST_METHOD_GET = 'GET';
 	const REQUEST_METHOD_POST = 'POST';
-	
+
 	protected $oauthAccessToken;
 	protected $oauthAccessTokenSecret;
 	protected $consumerKey;
@@ -47,7 +47,7 @@ class TwitterAPI
 		$this->consumerKey = $consumerKey;
 		$this->consumerSecret = $consumerSecret;
 		$this->apiUrl = $apiUrl;
-		
+
 		$this->curl = curl_init();
 	}
 
@@ -58,7 +58,7 @@ class TwitterAPI
 	 *
 	 * @return array
 	 */
-	protected function preparePostFields(array $parameters)
+	protected function prepareParameters(array $parameters)
 	{
 		if(isset($parameters['status']) && substr($parameters['status'], 0, 1) === '@') {
 			$parameters['status'] = sprintf("\0%s", $parameters['status']);
@@ -76,14 +76,7 @@ class TwitterAPI
 	 */
 	protected function generateHttpQueryString(array $parameters)
 	{
-		$replace = array('#' => '%23', ',' => '%2C', '+' => '%2B', ':' => '%3A');
-		$cleanedArray = array();
-
-		foreach($parameters as $key => $value) {
-			$cleanedArray[] = strtr($key, $replace) . '=' . strtr($value, $replace);
-		}
-
-		return '?' . implode('&', $cleanedArray);
+		return '?' . http_build_query($parameters, null, null, PHP_QUERY_RFC3986);
 	}
 
 	/**
@@ -108,7 +101,7 @@ class TwitterAPI
 		$composite_key = rawurlencode($this->consumerSecret) . '&' . rawurlencode($this->oauthAccessTokenSecret);
 		$oauth_signature = base64_encode(hash_hmac('sha1', $base_info, $composite_key, true));
 		$oauth['oauth_signature'] = $oauth_signature;
-		
+
 		$this->oauth = $oauth;
 	}
 
@@ -124,26 +117,27 @@ class TwitterAPI
 	 */
 	public function performRequest($uri, $requestMethod, $parameters = array())
 	{
+		if(in_array($requestMethod, array(self::REQUEST_METHOD_GET, self::REQUEST_METHOD_POST)) === false) {
+			throw new \Exception('Request method must be either POST or GET');
+		}
+
 		$requestUrl = $this->apiUrl . $uri . '.json';
-				
+
 		$options = array(
 			CURLOPT_HEADER => false,
 			CURLOPT_URL => $requestUrl,
 			CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_TIMEOUT => 10
+			CURLOPT_TIMEOUT => 10,
+			CURLOPT_CUSTOMREQUEST => $requestMethod
 		);
 
-		if($requestMethod === self::REQUEST_METHOD_POST) {
-			$options[CURLOPT_POSTFIELDS] = $this->preparePostFields($parameters);
-		} elseif($requestMethod === self::REQUEST_METHOD_GET) {
-			if(count($parameters) > 0) {
-				$options[CURLOPT_URL] .= $this->generateHttpQueryString($parameters);
-			}
-		} else {
-			throw new \Exception('Request method must be either POST or GET');
+		$preparedParameters = $this->prepareParameters($parameters);
+
+		if(count($preparedParameters) > 0) {
+			$options[CURLOPT_URL] .= $this->generateHttpQueryString($preparedParameters);
 		}
 
-		$this->buildOAuth($options[CURLOPT_URL], $requestMethod, $parameters);
+		$this->buildOAuth($options[CURLOPT_URL], $requestMethod);
 
 		$header = array(
 			$this->buildAuthorizationHeader($this->oauth),
@@ -161,16 +155,15 @@ class TwitterAPI
 
 		if(strlen($json) > 0) {
 			$responseObj = json_decode($json);
-			
+
 			if(isset($responseObj->errors)) {
 				$errorObj = $responseObj->errors[0];
-				var_dump($errorObj);
 				throw new \Exception($errorObj->message, $errorObj->code);
 			}
-			
+
 			return $responseObj;
 		}
-		
+
 		return false;
 	}
 
@@ -189,26 +182,23 @@ class TwitterAPI
 		$dataArr = array();
 
 		$urlParts = parse_url($baseURI);
-		
-		if(isset($urlParts['query']) === true) {
-			$queryArr = array();
-			parse_str($urlParts['query'], $queryArr);
 
-			$dataArr = $queryArr;
+		if(isset($urlParts['query']) === true) {
+			parse_str($urlParts['query'], $dataArr);
 		}
-		
+
 		$dataArr += $oauth;
-		
+
 		ksort($dataArr);
-		
+
 		foreach($dataArr as $key => $value) {
 			$return[] = rawurlencode($key) . '=' . rawurlencode($value);
 		}
-		
+
 		$url = $urlParts['scheme'] . '://' . $urlParts['host'] . $urlParts['path'];
-		
+
 		$baseString = strtoupper($method) . '&' . rawurlencode($url) . '&' . rawurlencode(implode('&', $return));
-		
+
 		return $baseString;
 	}
 
@@ -229,20 +219,20 @@ class TwitterAPI
 		}
 
 		$return .= implode(', ', $values);
-		
+
 		return $return;
 	}
 
 	/**
 	 * Disable peer verification for SSL
-	 * 
+	 *
 	 * @param bool $verifyPeer
 	 */
 	public function setVerifyPeer($verifyPeer)
 	{
 		curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, $verifyPeer);
 	}
-	
+
 	public function __destruct()
 	{
 		curl_close($this->curl);
@@ -250,4 +240,4 @@ class TwitterAPI
 }
 
 
-/* EOF */ 
+/* EOF */
