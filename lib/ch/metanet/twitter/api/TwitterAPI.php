@@ -76,7 +76,7 @@ class TwitterAPI
 	 */
 	protected function generateHttpQueryString(array $parameters)
 	{
-		return '?' . http_build_query($parameters, null, null, PHP_QUERY_RFC3986);
+		return '?' . http_build_query($parameters, null, '&', PHP_QUERY_RFC3986);
 	}
 
 	/**
